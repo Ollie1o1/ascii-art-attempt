@@ -138,53 +138,54 @@ class SpinningCube:
         """Stop the animation"""
         self.running = False
 
-class TerminalWindow:
+class ModernTerminalWindow:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("3D ASCII Spinning Cube Terminal")
-        self.root.configure(bg='black')
-        self.root.geometry("1000x700")
+        self.root.title("3D ASCII Spinning Cube • Modern Terminal")
         
-        # Set window icon and make it resizable
+        # Modern color scheme
+        self.colors = {
+            'bg': '#1a1a1a',          # Dark charcoal background
+            'header_bg': '#2d2d2d',    # Slightly lighter for headers
+            'cube_bg': '#161616',      # Darker for cube area
+            'footer_bg': '#2d2d2d',    # Match header
+            'text': '#e0e0e0',        # Light gray text
+            'accent': '#4a9eff',      # Blue accent
+            'cube_text': '#b8b8b8',   # Gray cube text
+            'border': '#404040'        # Border color
+        }
+        
+        self.root.configure(bg=self.colors['bg'])
+        self.root.geometry("1200x800")
         self.root.resizable(True, True)
         
-        # Create text widget that looks like a terminal
-        self.terminal_font = font.Font(family="Courier", size=9, weight="normal")
+        # Fonts
+        self.header_font = font.Font(family="Segoe UI", size=12, weight="bold")
+        self.info_font = font.Font(family="Segoe UI", size=10)
+        self.cube_font = font.Font(family="Courier New", size=9, weight="normal")
         
-        # Create frame for the text widget and scrollbar
-        self.frame = tk.Frame(self.root, bg='black')
-        self.frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Create main container
+        self.main_frame = tk.Frame(self.root, bg=self.colors['bg'])
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Create text widget
-        self.text_widget = tk.Text(
-            self.frame,
-            bg='black',
-            fg='#00ff00',  # Green text like classic terminals
-            font=self.terminal_font,
-            insertbackground='#00ff00',
-            selectbackground='#333333',
-            selectforeground='#00ff00',
-            wrap=tk.NONE,
-            state=tk.DISABLED
-        )
+        # Create header section
+        self.create_header()
         
-        # Create scrollbar
-        self.scrollbar = tk.Scrollbar(self.frame, orient=tk.VERTICAL, command=self.text_widget.yview)
-        self.text_widget.configure(yscrollcommand=self.scrollbar.set)
+        # Create cube display area
+        self.create_cube_area()
         
-        # Pack scrollbar and text widget
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Create footer section
+        self.create_footer()
         
         # Create the spinning cube
         self.cube = SpinningCube(size=20)
         
-        # Animation thread
+        # Animation variables
         self.animation_thread = None
-        
-        # Window dimensions tracking
         self.current_width = 0
         self.current_height = 0
+        self.frame_count = 0
+        self.start_time = time.time()
         
         # Bind window resize events
         self.root.bind('<Configure>', self.on_window_resize)
@@ -195,120 +196,207 @@ class TerminalWindow:
         # Start animation
         self.start_animation()
     
+    def create_header(self):
+        """Create the header section"""
+        self.header_frame = tk.Frame(self.main_frame, bg=self.colors['header_bg'], relief=tk.RAISED, bd=1)
+        self.header_frame.pack(fill=tk.X, pady=(0, 5))
+        
+        # Title
+        self.title_label = tk.Label(
+            self.header_frame, 
+            text="🎲 3D ASCII SPINNING CUBE",
+            font=self.header_font,
+            bg=self.colors['header_bg'],
+            fg=self.colors['accent'],
+            pady=10
+        )
+        self.title_label.pack()
+        
+        # Info row
+        self.info_frame = tk.Frame(self.header_frame, bg=self.colors['header_bg'])
+        self.info_frame.pack(fill=tk.X, padx=20, pady=(0, 10))
+        
+        # Left info
+        self.left_info = tk.Label(
+            self.info_frame,
+            text="Initializing...",
+            font=self.info_font,
+            bg=self.colors['header_bg'],
+            fg=self.colors['text'],
+            anchor=tk.W
+        )
+        self.left_info.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Right info
+        self.right_info = tk.Label(
+            self.info_frame,
+            text="Ready",
+            font=self.info_font,
+            bg=self.colors['header_bg'],
+            fg=self.colors['text'],
+            anchor=tk.E
+        )
+        self.right_info.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+    
+    def create_cube_area(self):
+        """Create the cube display area"""
+        self.cube_frame = tk.Frame(self.main_frame, bg=self.colors['cube_bg'], relief=tk.SUNKEN, bd=2)
+        self.cube_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        
+        # Cube display text widget
+        self.cube_display = tk.Text(
+            self.cube_frame,
+            bg=self.colors['cube_bg'],
+            fg=self.colors['cube_text'],
+            font=self.cube_font,
+            insertbackground=self.colors['cube_text'],
+            selectbackground=self.colors['border'],
+            selectforeground=self.colors['text'],
+            wrap=tk.NONE,
+            state=tk.DISABLED,
+            relief=tk.FLAT,
+            bd=0
+        )
+        
+        # Scrollbars for cube area
+        self.v_scrollbar = tk.Scrollbar(self.cube_frame, orient=tk.VERTICAL, command=self.cube_display.yview)
+        self.h_scrollbar = tk.Scrollbar(self.cube_frame, orient=tk.HORIZONTAL, command=self.cube_display.xview)
+        
+        self.cube_display.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+        
+        # Pack scrollbars and display
+        self.v_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.h_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.cube_display.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    
+    def create_footer(self):
+        """Create the footer section"""
+        self.footer_frame = tk.Frame(self.main_frame, bg=self.colors['footer_bg'], relief=tk.RAISED, bd=1)
+        self.footer_frame.pack(fill=tk.X, pady=(5, 0))
+        
+        # Rotation info
+        self.rotation_label = tk.Label(
+            self.footer_frame,
+            text="Rotation: X=0.00, Y=0.00, Z=0.00",
+            font=self.info_font,
+            bg=self.colors['footer_bg'],
+            fg=self.colors['text'],
+            pady=8
+        )
+        self.rotation_label.pack()
+        
+        # Status row
+        self.status_frame = tk.Frame(self.footer_frame, bg=self.colors['footer_bg'])
+        self.status_frame.pack(fill=tk.X, padx=20, pady=(0, 8))
+        
+        # Status left
+        self.status_left = tk.Label(
+            self.status_frame,
+            text="Status: Running • Animation: Active",
+            font=self.info_font,
+            bg=self.colors['footer_bg'],
+            fg=self.colors['accent'],
+            anchor=tk.W
+        )
+        self.status_left.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Status right
+        self.status_right = tk.Label(
+            self.status_frame,
+            text="Resize window to adjust cube size",
+            font=self.info_font,
+            bg=self.colors['footer_bg'],
+            fg=self.colors['text'],
+            anchor=tk.E
+        )
+        self.status_right.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+    
     def on_window_resize(self, event):
         """Handle window resize events"""
-        # Only respond to the root window resize, not child widgets
         if event.widget == self.root:
             self.update_dimensions()
     
     def update_dimensions(self):
         """Update canvas dimensions based on window size"""
-        # Get text widget dimensions
-        self.text_widget.update_idletasks()
+        self.cube_display.update_idletasks()
         
-        # Calculate character dimensions based on font
-        char_width = self.terminal_font.measure('M')
-        char_height = self.terminal_font.metrics('linespace')
+        # Calculate character dimensions
+        char_width = self.cube_font.measure('M')
+        char_height = self.cube_font.metrics('linespace')
         
-        # Get widget pixel dimensions
-        widget_width = self.text_widget.winfo_width()
-        widget_height = self.text_widget.winfo_height()
+        # Get cube display area dimensions
+        widget_width = self.cube_display.winfo_width()
+        widget_height = self.cube_display.winfo_height()
         
-        # Calculate how many characters can fit
         if widget_width > 0 and widget_height > 0:
-            self.current_width = max(40, widget_width // char_width - 2)
-            self.current_height = max(20, widget_height // char_height - 8)  # Reserve space for headers
+            self.current_width = max(40, widget_width // char_width)
+            self.current_height = max(20, widget_height // char_height)
             
-            # Calculate optimal cube size based on available space
-            # Use 25% of the smaller dimension for cube size
+            # Calculate optimal cube size
             available_space = min(self.current_width, self.current_height)
-            optimal_size = max(8, min(30, available_space // 4))
+            optimal_size = max(10, min(35, available_space // 3))
             
-            # Update cube size
             self.cube.update_size(optimal_size)
     
-    def update_display(self, content):
-        """Update the terminal display with new content"""
-        self.text_widget.config(state=tk.NORMAL)
-        self.text_widget.delete(1.0, tk.END)
-        self.text_widget.insert(tk.END, content)
-        self.text_widget.config(state=tk.DISABLED)
+    def update_cube_display(self, canvas):
+        """Update the cube display area"""
+        self.cube_display.config(state=tk.NORMAL)
+        self.cube_display.delete(1.0, tk.END)
         
-        # Auto-scroll to bottom
-        self.text_widget.see(tk.END)
+        # Convert canvas to string
+        cube_text = '\n'.join(''.join(row) for row in canvas)
+        self.cube_display.insert(tk.END, cube_text)
+        
+        self.cube_display.config(state=tk.DISABLED)
+    
+    def update_header_info(self):
+        """Update header information"""
+        elapsed = time.time() - self.start_time
+        
+        left_text = f"Window: {self.current_width}×{self.current_height} • Cube Size: {self.cube.size} • Frame: {self.frame_count}"
+        right_text = f"Runtime: {elapsed:.1f}s • FPS: 24"
+        
+        self.left_info.config(text=left_text)
+        self.right_info.config(text=right_text)
+    
+    def update_footer_info(self):
+        """Update footer information"""
+        rotation_text = f"Rotation: X={self.cube.angle_x:.2f}, Y={self.cube.angle_y:.2f}, Z={self.cube.angle_z:.2f}"
+        self.rotation_label.config(text=rotation_text)
     
     def animate_cube(self):
         """Animation loop for the spinning cube"""
         fps = 24
         frame_delay = 1.0 / fps
-        frame_count = 0
-        start_time = time.time()
         
-        # Initial dimension setup
+        # Initial setup
         self.root.after(100, self.update_dimensions)
         
         while self.cube.running:
             try:
-                # Ensure we have valid dimensions
                 if self.current_width <= 0 or self.current_height <= 0:
                     time.sleep(0.1)
                     continue
                 
-                # Calculate canvas dimensions for the cube area
-                header_lines = 6
-                footer_lines = 5
-                available_height = max(10, self.current_height - header_lines - footer_lines)
-                canvas_width = self.current_width
-                canvas_height = available_height
+                # Render cube frame
+                canvas = self.cube.render_frame(self.current_width, self.current_height)
                 
-                # Render frame
-                canvas = self.cube.render_frame(canvas_width, canvas_height)
-                
-                # Create display content
-                current_time = time.time()
-                elapsed = current_time - start_time
-                
-                # Create header
-                header_line = "=" * min(80, self.current_width)
-                title_line = "🎲 3D ASCII SPINNING CUBE TERMINAL 🎲".center(len(header_line))
-                
-                content = []
-                content.append(header_line)
-                content.append(title_line)
-                content.append(header_line)
-                content.append(f"Window: {self.current_width}x{self.current_height} | Cube Size: {self.cube.size} | FPS: {fps} | Frame: {frame_count}")
-                content.append(f"Runtime: {elapsed:.1f}s | Resize window to adjust cube size")
-                content.append(header_line)
-                
-                # Add canvas
-                for row in canvas:
-                    content.append(''.join(row))
-                
-                # Add footer
-                content.append(header_line)
-                content.append(f"Rotation: X={self.cube.angle_x:.2f}, Y={self.cube.angle_y:.2f}, Z={self.cube.angle_z:.2f}")
-                content.append("Status: Running | Animation: Active | Responsive: Enabled")
-                content.append("Resize this window to see the cube adapt to different sizes!")
-                content.append(header_line)
-                
-                # Update display
-                display_text = '\n'.join(content)
-                self.root.after(0, lambda: self.update_display(display_text))
+                # Update displays
+                self.root.after(0, lambda: self.update_cube_display(canvas))
+                self.root.after(0, self.update_header_info)
+                self.root.after(0, self.update_footer_info)
                 
                 # Update rotation angles
                 self.cube.angle_x += 0.05
                 self.cube.angle_y += 0.07
                 self.cube.angle_z += 0.03
                 
-                # Keep angles in reasonable range
-                if self.cube.angle_x > 2 * math.pi:
-                    self.cube.angle_x -= 2 * math.pi
-                if self.cube.angle_y > 2 * math.pi:
-                    self.cube.angle_y -= 2 * math.pi
-                if self.cube.angle_z > 2 * math.pi:
-                    self.cube.angle_z -= 2 * math.pi
+                # Normalize angles
+                self.cube.angle_x %= 2 * math.pi
+                self.cube.angle_y %= 2 * math.pi
+                self.cube.angle_z %= 2 * math.pi
                 
-                frame_count += 1
+                self.frame_count += 1
                 time.sleep(frame_delay)
                 
             except Exception as e:
@@ -328,41 +416,17 @@ class TerminalWindow:
     
     def run(self):
         """Start the terminal window"""
-        # Show startup message
-        startup_msg = """
-====================================================================
-              🎲 3D ASCII SPINNING CUBE TERMINAL 🎲
-====================================================================
-Initializing responsive terminal interface...
-Loading adaptive 3D cube renderer...
-Setting up dynamic sizing system...
-Configuring auto-centering algorithms...
-
-🔄 Responsive Features:
-• Cube automatically resizes with window
-• Always centered in the display area
-• Optimal size calculated dynamically
-• Real-time dimension tracking
-
-Try resizing this window to see the cube adapt!
-Animation will begin shortly...
-====================================================================
-        """
-        self.update_display(startup_msg)
-        
-        # Start the tkinter main loop
         self.root.mainloop()
 
 def main():
     """Main function to create and run the terminal window"""
     try:
-        print("🎲 Starting Responsive 3D ASCII Spinning Cube Terminal...")
-        print("A separate resizable window will open shortly.")
-        print("Try resizing the window to see the cube adapt!")
-        print("Close the window to exit the animation.")
+        print("🎲 Starting Modern 3D ASCII Spinning Cube Interface...")
+        print("Opening minimalistic terminal window...")
+        print("Features: Responsive sizing, dedicated sections, modern UI")
+        print("Close the window to exit.")
         
-        # Create and run the terminal window
-        terminal = TerminalWindow()
+        terminal = ModernTerminalWindow()
         terminal.run()
         
     except KeyboardInterrupt:
